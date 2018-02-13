@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27004.2006
+VisualStudioVersion = 15.0.27130.2027
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataEnricher", "DataEnricher\DataEnricher.csproj", "{B5726A25-EE44-4A4D-80D9-5E291464E148}"
 EndProject
@@ -15,6 +15,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EnricherFunction", "EnricherFunction\EnricherFunction.csproj", "{90443CD9-BDE2-40A6-821C-5B34A38BCE10}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Cognitive.Skills", "Microsoft.Cognitive.Skills\Microsoft.Cognitive.Skills.csproj", "{91E17D90-BC6F-4097-A118-00AC2D18ADF3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utility", "Utility\Utility.csproj", "{8B90B5D4-194D-40F3-9AB4-15893FB2B537}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -38,6 +40,10 @@ Global
 		{91E17D90-BC6F-4097-A118-00AC2D18ADF3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{91E17D90-BC6F-4097-A118-00AC2D18ADF3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{91E17D90-BC6F-4097-A118-00AC2D18ADF3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B90B5D4-194D-40F3-9AB4-15893FB2B537}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B90B5D4-194D-40F3-9AB4-15893FB2B537}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B90B5D4-194D-40F3-9AB4-15893FB2B537}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B90B5D4-194D-40F3-9AB4-15893FB2B537}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
