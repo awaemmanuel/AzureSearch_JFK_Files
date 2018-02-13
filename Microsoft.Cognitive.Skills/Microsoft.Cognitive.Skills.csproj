@@ -64,6 +64,12 @@
   <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Utility\Utility.csproj">
+      <Project>{8B90B5D4-194D-40F3-9AB4-15893FB2B537}</Project>
+      <Name>Utility</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>if not exist "$(ProjectDir)\..\EnricherFunction\EnrichImages\bin\" mkdir "$(ProjectDir)\..\EnricherFunction\EnrichImages\bin\"
