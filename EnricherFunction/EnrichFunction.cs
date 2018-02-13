@@ -1,23 +1,22 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Host;
-using Newtonsoft.Json;
 using System.Net;
-using Microsoft.Cognitive.Skills;
-using System.Drawing;
-using System;
+using System.Net.Http;
+using System.Reflection;
+using System.Threading.Tasks;
 using Microsoft.Azure.Search;
 using Microsoft.Azure.Search.Models;
-using Microsoft.ProjectOxford.EntityLinking;
-using Microsoft.ProjectOxford.EntityLinking.Contract;
-using Microsoft.ProjectOxford.Vision.Contract;
-using Microsoft.ProjectOxford.Vision;
-using System.Reflection;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Cognitive.Skills;
+using Microsoft.ProjectOxford.EntityLinking;
+using Microsoft.ProjectOxford.EntityLinking.Contract;
+using Microsoft.ProjectOxford.Vision;
+using Microsoft.ProjectOxford.Vision.Contract;
+using Newtonsoft.Json;
 
 namespace EnricherFunction
 {
@@ -25,7 +24,6 @@ namespace EnricherFunction
     {
         static ImageStore blobContainer;
         static Vision visionClient;
-        static HttpClient httpClient = new HttpClient();
         static ISearchIndexClient indexClient;
         static EntityLinkingServiceClient linkedEntityClient;
         static AnnotationStore cosmosDb;
@@ -54,6 +52,8 @@ namespace EnricherFunction
         [FunctionName("index-document")]
         public static async Task<HttpResponseMessage> HttpProcessDocument([HttpTrigger(AuthorizationLevel.Function, "post", Route = null)]HttpRequestMessage req, TraceWriter log)
         {
+            log.Info("Inside HttpProcessDocument");
+
             // parse query parameter
             string name = req.GetQueryNameValuePairs().FirstOrDefault(q => string.Compare(q.Key, "name", true) == 0).Value;
             if (string.IsNullOrEmpty(name))
@@ -69,6 +69,10 @@ namespace EnricherFunction
             catch (Exception e)
             {
                 log.Error(e.ToString());
+                if (e is ClientException)
+                {
+                    log.Error(((ClientException)e).Error.Message);
+                }
                 return req.CreateResponse(HttpStatusCode.InternalServerError, "Error processing the Document: " + e.ToString());
             }
 
@@ -79,6 +83,7 @@ namespace EnricherFunction
         [FunctionName("get-annotated-document")]
         public static async Task<HttpResponseMessage> HttpGetAnnotatedDocument([HttpTrigger(AuthorizationLevel.Function, "post", Route = null)]HttpRequestMessage req, TraceWriter log)
         {
+            log.Info("Inside HttpGetAnnotatedDocument");
             // parse query parameter
             string name = req.GetQueryNameValuePairs().FirstOrDefault(q => string.Compare(q.Key, "name", true) == 0).Value;
             if (string.IsNullOrEmpty(name))
@@ -103,6 +108,7 @@ namespace EnricherFunction
         [FunctionName("get-search-document")]
         public static async Task<HttpResponseMessage> HttpGetSearchDocument([HttpTrigger(AuthorizationLevel.Function, "post", Route = null)]HttpRequestMessage req, TraceWriter log)
         {
+            log.Info("Inside HttpGetSearchDocument");
             // parse query parameter
             string name = req.GetQueryNameValuePairs().FirstOrDefault(q => string.Compare(q.Key, "name", true) == 0).Value;
             if (string.IsNullOrEmpty(name))
@@ -129,7 +135,16 @@ namespace EnricherFunction
         [FunctionName("index-document-blob-trigger")]
         public static async Task BlobTriggerIndexDocument([BlobTrigger(Config.LIBRARY_BLOB_STORAGE_CONTAINER + "/{name}", Connection = "IMAGE_BLOB_CONNECTION_STRING")]Stream blobStream, string name, TraceWriter log)
         {
-            await Run(blobStream, name, log);
+            log.Info("Inside BlobTriggerIndexDocument");
+            try
+            {
+                await Run(blobStream, name, log);
+            } catch (ClientException ce)
+            {
+                log.Error($"BlobTriggerIndexDocument Failed with: {ce.Error.Message}");
+                throw;
+            }
+            
         }
 
 #endregion
@@ -294,6 +309,7 @@ namespace EnricherFunction
                      .GroupBy(l => l.Name)
                      .OrderByDescending(g => g.Max(l => l.Score))
                      .Select(l => l.Key)
+                     .Where(l => !string.IsNullOrEmpty(l))
                      .ToList(),
             };
             return searchDocument;
