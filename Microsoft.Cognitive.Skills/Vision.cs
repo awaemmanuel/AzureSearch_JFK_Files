@@ -10,6 +10,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
+using Utility;
 
 namespace Microsoft.Cognitive.Skills
 {
@@ -144,54 +145,59 @@ namespace Microsoft.Cognitive.Skills
             var uri = apiRoot + "/recognizeText?handwriting=true";
 
             HttpResponseMessage response;
-
-            // Request body
-            if (stream != null)
-            {
-                using (var content = new StreamContent(stream))
-                {
-                    content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-                    response = await client.PostAsync(uri, content);
-                }
-            }
-            else
-            {
-                var json = JsonConvert.SerializeObject(new { url = url });
-                using (var content = new StringContent(json))
-                {
-                    content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-                    response = await client.PostAsync(uri, content);
-                }
-            }
-
             OcrResult result = null;
             IEnumerable<string> opLocation;
 
-            if (!response.IsSuccessStatusCode)
+            // Retry with Exponential Backoff 
+            var retry = new RetryWithExponentialBackoff();
+            await retry.RunAsync(async () =>
             {
-                var err = await response.Content.ReadAsStringAsync();
-                response.EnsureSuccessStatusCode();
-            }
-
-
-
-            if (response.Headers.TryGetValues("Operation-Location", out opLocation))
-            {
-                while (true)
+                // Request body
+                if (stream != null)
                 {
-                    response = await client.GetAsync(opLocation.First());
-                    var txt = await response.Content.ReadAsStringAsync();
-                    var status = JsonConvert.DeserializeObject<AsyncStatusResult>(txt);
-                    if (status.status == "Running" || status.status == "NotStarted")
-                        await Task.Delay(TimeSpan.FromMilliseconds(100));
-                    else
+                    using (var content = new StreamContent(stream))
                     {
-                        result = status.recognitionResult;
-
-                        break;
+                        content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+                        response = await client.PostAsync(uri, content);
                     }
                 }
-            }
+                else
+                {
+                    var json = JsonConvert.SerializeObject(new { url = url });
+                    using (var content = new StringContent(json))
+                    {
+                        content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                        response = await client.PostAsync(uri, content);
+                    }
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var err = await response.Content.ReadAsStringAsync();
+                    response.EnsureSuccessStatusCode();
+                }
+
+
+
+                if (response.Headers.TryGetValues("Operation-Location", out opLocation))
+                {
+                    while (true)
+                    {
+                        response = await client.GetAsync(opLocation.First());
+                        var txt = await response.Content.ReadAsStringAsync();
+                        var status = JsonConvert.DeserializeObject<AsyncStatusResult>(txt);
+                        if (status.status == "Running" || status.status == "NotStarted")
+                            await Task.Delay(TimeSpan.FromMilliseconds(100));
+                        else
+                        {
+                            result = status.recognitionResult;
+
+                            break;
+                        }
+                    }
+                }
+
+            });
 
             return result;
         }
